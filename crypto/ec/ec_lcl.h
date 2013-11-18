@@ -199,7 +199,8 @@ struct ec_group_st {
 	unsigned char *seed; /* optional seed for parameters (appears in ASN1) */
 	size_t seed_len;
 
-	EC_EXTRA_DATA *extra_data; /* linked list */
+	EC_EXTRA_DATA *extra_data;  /* linked list */
+    BN_MONT_CTX *mont_data;     /* data for ECDSA inverse */
 
 	/* The following members are handled by the method functions,
 	 * even if they appear generic */

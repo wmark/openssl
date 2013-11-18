@@ -98,6 +98,8 @@ EC_GROUP *EC_GROUP_new(const EC_METHOD *meth)
 	ret->meth = meth;
 
 	ret->extra_data = NULL;
+    
+	ret->mont_data = NULL;
 
 	ret->generator = NULL;
 	BN_init(&ret->order);
@@ -120,6 +122,7 @@ EC_GROUP *EC_GROUP_new(const EC_METHOD *meth)
 	}
 
 
+
 void EC_GROUP_free(EC_GROUP *group)
 	{
 	if (!group) return;
@@ -128,6 +131,11 @@ void EC_GROUP_free(EC_GROUP *group)
 		group->meth->group_finish(group);
 
 	EC_EX_DATA_free_all_data(&group->extra_data);
+    
+    if(group->mont_data)
+    {
+        BN_MONT_CTX_free(group->mont_data);
+    }
 
 	if (group->generator != NULL)
 		EC_POINT_free(group->generator);
@@ -151,6 +159,11 @@ void EC_GROUP_clear_free(EC_GROUP *group)
 		group->meth->group_finish(group);
 
 	EC_EX_DATA_clear_free_all_data(&group->extra_data);
+    
+    if(group->mont_data)
+    {
+        BN_MONT_CTX_free(group->mont_data);
+    }
 
 	if (group->generator != NULL)
 		EC_POINT_clear_free(group->generator);
@@ -166,6 +179,7 @@ void EC_GROUP_clear_free(EC_GROUP *group)
 	OPENSSL_cleanse(group, sizeof *group);
 	OPENSSL_free(group);
 	}
+
 
 
 int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
@@ -196,7 +210,26 @@ int EC_GROUP_copy(EC_GROUP *dest, const EC_GROUP *src)
 		if (!EC_EX_DATA_set_data(&dest->extra_data, t, d->dup_func, d->free_func, d->clear_free_func))
 			return 0;
 		}
-
+        
+	if (src->mont_data != NULL)
+		{
+		if (dest->mont_data == NULL)
+			{
+			dest->mont_data = BN_MONT_CTX_new();
+			if (dest->mont_data == NULL) return 0;
+			}
+		if (!BN_MONT_CTX_copy(dest->mont_data, src->mont_data)) return 0;
+		}
+	else
+		{
+		/* src->generator == NULL */
+		if (dest->mont_data != NULL)
+			{
+			BN_MONT_CTX_free(dest->mont_data);
+			dest->mont_data = NULL;
+			}
+		}
+        
 	if (src->generator != NULL)
 		{
 		if (dest->generator == NULL)
@@ -313,6 +346,34 @@ int EC_GROUP_set_generator(EC_GROUP *group, const EC_POINT *generator, const BIG
 const EC_POINT *EC_GROUP_get0_generator(const EC_GROUP *group)
 	{
 	return group->generator;
+	}
+    
+const BN_MONT_CTX *EC_GROUP_get_mont_data(EC_GROUP *group)
+	{
+    if(group->mont_data)
+    {
+        return group->mont_data;
+    }
+    
+    /* compute new mont ctx */
+    BN_CTX *ctx = NULL;
+    ctx = BN_CTX_new();
+    
+    if(ctx)
+    {
+        /* Precompute Montgomery data */
+        group->mont_data = BN_MONT_CTX_new();
+        if(group->mont_data)
+        {
+            if(!BN_MONT_CTX_set(group->mont_data, &group->order, ctx))
+            {
+                BN_MONT_CTX_free(group->mont_data);
+                group->mont_data = NULL;
+            }
+        }
+        BN_CTX_free(ctx);
+    }
+    return group->mont_data;
 	}
 
 
@@ -1072,15 +1133,51 @@ int EC_POINT_mul(const EC_GROUP *group, EC_POINT *r, const BIGNUM *g_scalar,
 	}
 
 int EC_GROUP_precompute_mult(EC_GROUP *group, BN_CTX *ctx)
-	{
+	{    
+    
+    int ret = 0;
+    BN_CTX *new_ctx = NULL;
+    
+    if (ctx == NULL)
+    {
+        ctx = new_ctx = BN_CTX_new();
+    }
+    
+    if(ctx)
+    {
+        /* Precompute Montgomery data */
+        group->mont_data = BN_MONT_CTX_new();
+        if(group->mont_data)
+        {
+            if(!BN_MONT_CTX_set(group->mont_data, &group->order, ctx))
+            {
+                BN_MONT_CTX_free(group->mont_data);
+                group->mont_data = NULL;
+            }
+        }
+    }
+    
 	if (group->meth->mul == 0)
+    {
 		/* use default */
-		return ec_wNAF_precompute_mult(group, ctx);
+		ret = ec_wNAF_precompute_mult(group, ctx);
+        if(new_ctx)
+        {
+            BN_CTX_free(ctx);
+        }
+        return ret;
+    }
 
 	if (group->meth->precompute_mult != 0)
-		return group->meth->precompute_mult(group, ctx);
+		ret = group->meth->precompute_mult(group, ctx);
 	else
-		return 1; /* nothing to do, so report success */
+		ret =  1; /* nothing to do, so report success */
+        
+    if(new_ctx)
+    {
+        BN_CTX_free(ctx);
+    }        
+    return ret;
 	}
 
 int EC_GROUP_have_precompute_mult(const EC_GROUP *group)

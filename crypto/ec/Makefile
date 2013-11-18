@@ -22,14 +22,15 @@ LIBSRC=	ec_lib.c ecp_smpl.c ecp_mont.c ecp_nist.c ec_cvt.c ec_mult.c\
 	ec2_smpl.c ec2_mult.c ec_ameth.c ec_pmeth.c eck_prn.c \
 	ecp_nistp224.c ecp_nistp256.c ecp_nistp521.c ecp_nistputil.c \
 	ecp_oct.c ec2_oct.c ec_oct.c ec2_nist_prec.c ec2_nist.c \
-	ec2_nist_mult.c
+	ec2_nist_mult.c ec_p256_routines_mont.c ec_p256_precomp_table.c
 
 LIBOBJ=	ec_lib.o ecp_smpl.o ecp_mont.o ecp_nist.o ec_cvt.o ec_mult.o\
 	ec_err.o ec_curve.o ec_check.o ec_print.o ec_asn1.o ec_key.o\
 	ec2_smpl.o ec2_mult.o ec_ameth.o ec_pmeth.o eck_prn.o \
 	ecp_nistp224.o ecp_nistp256.o ecp_nistp521.o ecp_nistputil.o \
 	ecp_oct.o ec2_oct.o ec_oct.o ec2_nist_prec.o ec2_nist.o \
-	ec2_nist_mult.o
+	ec2_nist_mult.o ec_p256_funcs_mont.o ec_p256_routines_mont.o \
+	ec_p256_precomp_table.o
 
 SRC= $(LIBSRC)
 
@@ -84,7 +85,8 @@ clean:
 	rm -f *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-
+ec_p256_funcs_mont.o: asm/ec_p256_funcs_mont.s
+	$(CC) $(CFLAG) asm/ec_p256_funcs_mont.s -c
 ec2_mult.o: ../../include/openssl/asn1.h ../../include/openssl/bio.h
 ec2_mult.o: ../../include/openssl/bn.h ../../include/openssl/crypto.h
 ec2_mult.o: ../../include/openssl/e_os2.h ../../include/openssl/ec.h

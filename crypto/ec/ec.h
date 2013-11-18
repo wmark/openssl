@@ -151,6 +151,11 @@ const EC_METHOD *EC_GFp_mont_method(void);
  */
 const EC_METHOD *EC_GFp_nist_method(void);
 
+/** Returns GFp methods using montgomery multiplication, with x86-64 optimized P256
+ *  \return  EC_METHOD object
+ */
+const EC_METHOD *EC_GFp_mont_p256_method(void);
+
 #ifndef OPENSSL_NO_EC_NISTP_64_GCC_128
 /** Returns 64-bit optimized methods for nistp224
  *  \return  EC_METHOD object
@@ -254,6 +259,13 @@ int EC_GROUP_set_generator(EC_GROUP *group, const EC_POINT *generator, const BIG
  *  \return the currently used generator (possibly NULL).
  */
 const EC_POINT *EC_GROUP_get0_generator(const EC_GROUP *group);
+
+/** Returns the montgomery data for order(Generator)
+ *  \param  group  EC_GROUP object
+ *  \return the currently used generator (possibly NULL).
+*/
+const BN_MONT_CTX  *EC_GROUP_get_mont_data(EC_GROUP *group);
+
 
 /** Gets the order of a EC_GROUP
  *  \param  group  EC_GROUP object
@@ -1194,6 +1206,11 @@ void ERR_load_EC_strings(void);
 #define EC_F_PKEY_EC_KEYGEN				 199
 #define EC_F_PKEY_EC_PARAMGEN				 219
 #define EC_F_PKEY_EC_SIGN				 218
+#define EC_F_P256_MONT_PRECOMPUTE_MULT                      240
+#define EC_F_P256_MONT_GET_AFFINE_COORDINATES               241
+#define EC_F_P256_MONT_PRE_COMP_NEW                         242
+#define EC_F_P256_MONT_POINTS_MUL                           243
+#define EC_F_P256_MONT_POINTS_MUL_W                         244
 
 /* Reason codes. */
 #define EC_R_ASN1_ERROR					 115
