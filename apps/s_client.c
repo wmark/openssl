@@ -290,6 +290,10 @@ static void sc_usage(void)
 	{
 	BIO_printf(bio_err,"usage: s_client args\n");
 	BIO_printf(bio_err,"\n");
+	BIO_printf(bio_err," -4             - use IPv4 only\n");
+#if OPENSSL_USE_IPV6
+	BIO_printf(bio_err," -6             - use IPv6 only\n");
+#endif
 	BIO_printf(bio_err," -host host     - use -connect instead\n");
 	BIO_printf(bio_err," -port port     - use -connect instead\n");
 	BIO_printf(bio_err," -connect host:port - who to connect to (default is %s:%s)\n",SSL_HOST_NAME,PORT_STR);
@@ -598,6 +602,7 @@ int MAIN(int argc, char **argv)
 	int sbuf_len,sbuf_off;
 	fd_set readfds,writefds;
 	short port=PORT;
+	int use_ipv4, use_ipv6;
 	int full_log=1;
 	char *host=SSL_HOST_NAME;
 	char *cert_file=NULL,*key_file=NULL,*chain_file=NULL;
@@ -650,7 +655,11 @@ int MAIN(int argc, char **argv)
 #endif
 	char *sess_in = NULL;
 	char *sess_out = NULL;
-	struct sockaddr peer;
+#if OPENSSL_USE_IPV6
+	struct sockaddr_storage peer;
+#else
+	struct sockaddr_in peer;
+#endif
 	int peerlen = sizeof(peer);
 	int enable_timeouts = 0 ;
 	long socket_mtu = 0;
@@ -677,6 +686,12 @@ static char *jpake_secret = NULL;
 
 	meth=SSLv23_client_method();
 
+	use_ipv4 = 1;
+#if OPENSSL_USE_IPV6
+	use_ipv6 = 1;
+#else
+	use_ipv6 = 0;
+#endif
 	apps_startup();
 	c_Pause=0;
 	c_quiet=0;
@@ -1084,6 +1099,18 @@ static char *jpake_secret = NULL;
 			jpake_secret = *++argv;
 			}
 #endif
+		else if (strcmp(*argv,"-4") == 0)
+			{
+			use_ipv4 = 1;
+			use_ipv6 = 0;
+			}
+#if OPENSSL_USE_IPV6
+		else if (strcmp(*argv,"-6") == 0)
+			{
+			use_ipv4 = 0;
+			use_ipv6 = 1;
+			}
+#endif
 		else if (strcmp(*argv,"-use_srtp") == 0)
 			{
 			if (--argc < 1) goto bad;
@@ -1456,7 +1483,7 @@ bad:
 
 re_start:
 
-	if (init_client(&s,host,port,socket_type) == 0)
+	if (init_client(&s,host,port,socket_type,use_ipv4,use_ipv6) == 0)
 		{
 		BIO_printf(bio_err,"connect:errno=%d\n",get_last_socket_error());
 		SHUTDOWN(s);
@@ -1482,7 +1509,7 @@ re_start:
 		{
 
 		sbio=BIO_new_dgram(s,BIO_NOCLOSE);
-		if (getsockname(s, &peer, (void *)&peerlen) < 0)
+		if (getsockname(s, (struct sockaddr *)&peer, (void *)&peerlen) < 0)
 			{
 			BIO_printf(bio_err, "getsockname:errno=%d\n",
 				get_last_socket_error());

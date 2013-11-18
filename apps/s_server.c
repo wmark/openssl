@@ -581,6 +581,10 @@ static void sv_usage(void)
         BIO_printf(bio_err," -use_srtp profiles - Offer SRTP key management with a colon-separated profile list\n");
 	BIO_printf(bio_err," -alpn arg  - set the advertised protocols for the ALPN extension (comma-separated list)\n");
 #endif
+	BIO_printf(bio_err," -4            - use IPv4 only\n");
+#if OPENSSL_USE_IPV6
+	BIO_printf(bio_err," -6            - use IPv6 only\n");
+#endif
 	BIO_printf(bio_err," -keymatexport label   - Export keying material using label\n");
 	BIO_printf(bio_err," -keymatexportlen len  - Export len bytes of keying material (default 20)\n");
 	}
@@ -1007,6 +1011,7 @@ int MAIN(int argc, char *argv[])
 	int state=0;
 	const SSL_METHOD *meth=NULL;
 	int socket_type=SOCK_STREAM;
+	int use_ipv4, use_ipv6;
 	ENGINE *e=NULL;
 	char *inrand=NULL;
 	int s_cert_format = FORMAT_PEM, s_key_format = FORMAT_PEM;
@@ -1048,6 +1053,12 @@ int MAIN(int argc, char *argv[])
 
 	meth=SSLv23_server_method();
 
+	use_ipv4 = 1;
+#if OPENSSL_USE_IPV6
+	use_ipv6 = 1;
+#else
+	use_ipv6 = 0;
+#endif
 	local_argc=argc;
 	local_argv=argv;
 
@@ -1489,6 +1500,18 @@ int MAIN(int argc, char *argv[])
 			{
 			if (--argc < 1) goto bad;
 			jpake_secret = *(++argv);
+			}
+#endif
+		else if (strcmp(*argv,"-4") == 0)
+			{
+			use_ipv4 = 1;
+			use_ipv6 = 0;
+			}
+#if OPENSSL_USE_IPV6
+		else if (strcmp(*argv,"-6") == 0)
+			{
+			use_ipv4 = 0;
+			use_ipv6 = 1;
 			}
 #endif
 		else if (strcmp(*argv,"-use_srtp") == 0)
@@ -2055,11 +2078,11 @@ bad:
 	BIO_printf(bio_s_out,"ACCEPT\n");
 	(void)BIO_flush(bio_s_out);
 	if (rev)
-		do_server(port,socket_type,&accept_socket,rev_body, context, naccept);
+		do_server(port,socket_type,&accept_socket,rev_body, context, naccept, use_ipv4, use_ipv6);
 	else if (www)
-		do_server(port,socket_type,&accept_socket,www_body, context, naccept);
+		do_server(port,socket_type,&accept_socket,www_body, context, naccept, use_ipv4, use_ipv6);
 	else
-		do_server(port,socket_type,&accept_socket,sv_body, context, naccept);
+		do_server(port,socket_type,&accept_socket,sv_body, context, naccept, use_ipv4, use_ipv6);
 	print_stats(bio_s_out,ctx);
 	ret=0;
 end:
