@@ -42,6 +42,11 @@ ALL=    $(GENERAL) $(SRC) $(HEADER)
 top:
 	(cd ../..; $(MAKE) DIRS=crypto SDIRS=$(DIR) sub_all)
 
+ec_p256_funcs_mont.o:	asm/ec_p256_funcs_mont.s
+	@if [ "$(CC)" = "gcc" ]; then \
+		as -O -o $@ asm/ec_p256_funcs_mont.s; \
+	else	$(CC) -c $(CFLAG) -o $@ asm/ec_p256_funcs_mont.s; fi
+
 all:	lib
 
 lib:	$(LIBOBJ)
@@ -85,8 +90,7 @@ clean:
 	rm -f *.o */*.o *.obj lib tags core .pure .nfs* *.old *.bak fluff
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
-ec_p256_funcs_mont.o: asm/ec_p256_funcs_mont.s
-	$(CC) $(CFLAG) asm/ec_p256_funcs_mont.s -c
+
 ec2_mult.o: ../../include/openssl/asn1.h ../../include/openssl/bio.h
 ec2_mult.o: ../../include/openssl/bn.h ../../include/openssl/crypto.h
 ec2_mult.o: ../../include/openssl/e_os2.h ../../include/openssl/ec.h
