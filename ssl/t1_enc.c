@@ -464,30 +464,6 @@ static int tls1_change_cipher_state_cipher(
 		EVP_CIPHER_CTX_ctrl(cipher_ctx, EVP_CTRL_AEAD_SET_MAC_KEY,
 				    mac_secret_len, (void*) mac_secret);
 
-#ifdef OPENSSL_SSL_TRACE_CRYPTO
-	if (s->msg_callback)
-		{
-		int wh = which & SSL3_CC_WRITE ? TLS1_RT_CRYPTO_WRITE : 0;
-		if (*mac_secret_size)
-			s->msg_callback(2, s->version, wh | TLS1_RT_CRYPTO_MAC,
-						mac_secret, *mac_secret_size,
-						s, s->msg_callback_arg);
-		if (c->key_len)
-			s->msg_callback(2, s->version, wh | TLS1_RT_CRYPTO_KEY,
-						key, c->key_len,
-						s, s->msg_callback_arg);
-		if (k)
-			{
-			if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE)
-				wh |= TLS1_RT_CRYPTO_FIXED_IV;
-			else
-				wh |= TLS1_RT_CRYPTO_IV;
-			s->msg_callback(2, s->version, wh, iv, k,
-						s, s->msg_callback_arg);
-			}
-		}
-#endif
-
 	if (is_export)
 		{
 		OPENSSL_cleanse(export_tmp1, sizeof(export_tmp1));
@@ -616,6 +592,30 @@ int tls1_change_cipher_state(SSL *s, int which)
 					     iv, iv_len)) {
 		return 0;
 	}
+
+#ifdef OPENSSL_SSL_TRACE_CRYPTO
+	if (s->msg_callback)
+		{
+		int wh = which & SSL3_CC_WRITE ? TLS1_RT_CRYPTO_WRITE : 0;
+		if (*mac_secret_size)
+			s->msg_callback(2, s->version, wh | TLS1_RT_CRYPTO_MAC,
+						mac_secret, *mac_secret_size,
+						s, s->msg_callback_arg);
+		if (c->key_len)
+			s->msg_callback(2, s->version, wh | TLS1_RT_CRYPTO_KEY,
+						key, c->key_len,
+						s, s->msg_callback_arg);
+		if (k)
+			{
+			if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE)
+				wh |= TLS1_RT_CRYPTO_FIXED_IV;
+			else
+				wh |= TLS1_RT_CRYPTO_IV;
+			s->msg_callback(2, s->version, wh, iv, k,
+						s, s->msg_callback_arg);
+			}
+		}
+#endif
 
 	return 1;
 err:
