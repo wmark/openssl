@@ -597,21 +597,21 @@ int tls1_change_cipher_state(SSL *s, int which)
 	if (s->msg_callback)
 		{
 		int wh = which & SSL3_CC_WRITE ? TLS1_RT_CRYPTO_WRITE : 0;
-		if (*mac_secret_size)
+		if (mac_secret_len)
 			s->msg_callback(2, s->version, wh | TLS1_RT_CRYPTO_MAC,
-						mac_secret, *mac_secret_size,
+						mac_secret, mac_secret_len,
 						s, s->msg_callback_arg);
-		if (c->key_len)
+		if (key_len)
 			s->msg_callback(2, s->version, wh | TLS1_RT_CRYPTO_KEY,
-						key, c->key_len,
+						key, key_len,
 						s, s->msg_callback_arg);
-		if (k)
+		if (iv_len)
 			{
 			if (EVP_CIPHER_mode(c) == EVP_CIPH_GCM_MODE)
 				wh |= TLS1_RT_CRYPTO_FIXED_IV;
 			else
 				wh |= TLS1_RT_CRYPTO_IV;
-			s->msg_callback(2, s->version, wh, iv, k,
+			s->msg_callback(2, s->version, wh, iv, iv_len,
 						s, s->msg_callback_arg);
 			}
 		}
