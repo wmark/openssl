@@ -88,7 +88,9 @@ OBJ=	$(BNTEST).o $(ECTEST).o  $(ECDSATEST).o $(ECDHTEST).o $(IDEATEST).o \
 	$(MDC2TEST).o $(RMDTEST).o \
 	$(RANDTEST).o $(DHTEST).o $(ENGINETEST).o $(CASTTEST).o \
 	$(BFTEST).o  $(SSLTEST).o  $(DSATEST).o  $(EXPTEST).o $(RSATEST).o \
-	$(EVPTEST).o $(IGETEST).o $(JPAKETEST).o $(ASN1TEST).o $(V3NAMETEST).o
+	$(EVPTEST).o $(IGETEST).o $(JPAKETEST).o $(ASN1TEST).o $(V3NAMETEST).o \
+	$(CHACHATEST).o $(POLY1305TEST).o
+
 SRC=	$(BNTEST).c $(ECTEST).c  $(ECDSATEST).c $(ECDHTEST).c $(IDEATEST).c \
 	$(MD2TEST).c  $(MD4TEST).c $(MD5TEST).c \
 	$(HMACTEST).c $(WPTEST).c \
@@ -97,7 +99,7 @@ SRC=	$(BNTEST).c $(ECTEST).c  $(ECDSATEST).c $(ECDHTEST).c $(IDEATEST).c \
 	$(RANDTEST).c $(DHTEST).c $(ENGINETEST).c $(CASTTEST).c \
 	$(BFTEST).c  $(SSLTEST).c $(DSATEST).c   $(EXPTEST).c $(RSATEST).c \
 	$(EVPTEST).c $(IGETEST).c $(JPAKETEST).c $(SRPTEST).c $(ASN1TEST).c \
-	$(V3NAMETEST).c
+	$(V3NAMETEST).c $(CHACHATEST).c $(POLY1305TEST).c
 
 EXHEADER= 
 HEADER=	$(EXHEADER)
@@ -140,7 +142,8 @@ alltests: \
 	test_enc test_x509 test_rsa test_crl test_sid \
 	test_gen test_req test_pkcs7 test_verify test_dh test_dsa \
 	test_ss test_ca test_engine test_evp test_ssl test_tsa test_ige \
-	test_jpake test_srp test_cms test_ocsp test_v3name
+	test_jpake test_srp test_cms test_ocsp test_v3name \
+	test_chacha test_poly1305
 
 test_evp: $(EVPTEST) evptests.txt
 	../util/shlib_wrap.sh ./$(EVPTEST) evptests.txt
@@ -331,6 +334,14 @@ test_v3name: $(V3NAMETEST)$(EXE_EXT)
 	@echo "Test X509v3_check_*"
 	../util/shlib_wrap.sh ./$(V3NAMETEST)
 
+test_chacha: $(CHACHATEST)$(EXE_EXT)
+	@echo "Test ChaCha"
+	../util/shlib_wrap.sh ./$(CHACHATEST)
+
+test_poly1305: $(POLY1305TEST)$(EXE_EXT)
+	@echo "Test Poly1305"
+	../util/shlib_wrap.sh ./$(POLY1305TEST)
+
 lint:
 	lint -DLINT $(INCLUDES) $(SRC)>fluff
 
@@ -406,6 +417,12 @@ $(SHA256TEST)$(EXE_EXT): $(SHA256TEST).o $(DLIBCRYPTO)
 
 $(SHA512TEST)$(EXE_EXT): $(SHA512TEST).o $(DLIBCRYPTO)
 	+@target=$(SHA512TEST); $(BUILD_CMD)
+
+$(CHACHATEST)$(EXE_EXT): $(CHACHATEST).o $(DLIBCRYPTO)
+	@target=$(CHACHATEST); $(BUILD_CMD)
+
+$(POLY1305TEST)$(EXE_EXT): $(POLY1305TEST).o $(DLIBCRYPTO)
+	@target=$(CHACHATEST); $(BUILD_CMD)
 
 $(RMDTEST)$(EXE_EXT): $(RMDTEST).o $(DLIBCRYPTO)
 	+@target=$(RMDTEST); $(BUILD_CMD)
