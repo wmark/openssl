@@ -44,7 +44,7 @@ top:
 
 ec_p256_funcs_mont.o:	asm/ec_p256_funcs_mont.s
 	@if [ "$(CC)" = "gcc" ]; then \
-		as -O -o $@ asm/ec_p256_funcs_mont.s; \
+		as -o $@ asm/ec_p256_funcs_mont.s; \
 	else	$(CC) -c $(CFLAG) -o $@ asm/ec_p256_funcs_mont.s; fi
 
 all:	lib
